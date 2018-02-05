@@ -1,7 +1,6 @@
 import os, sys
 import csv
 import random # for testing purposes.
-import itertools
 
 # submission.csv must be deleted after each run.
 # if submission.csv is not deleted, subsequent runs will append new entries to
