@@ -28,8 +28,6 @@ def avg_overlaps(pred_arr):
 
         arr[ind] = sum(valid) / len(valid)
 
-        print('loop executed. arr[ind] is:', arr[ind])
-
     return np.array(arr)
 
 
@@ -62,7 +60,6 @@ def create_mapping(pred_arr, patch_size, binary = True, threshold = 0.5):
 
     rows, cols = pred_arr.shape
 
-    print('rows:', rows, '\tcols:', cols, '\tpatch_size:', patch_size)
     # Creates empty template that will be colored depending on prediction
     # value. This array is assumed to be equal to the initial slide
     # image in shape.
