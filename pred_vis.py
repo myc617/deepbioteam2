@@ -5,6 +5,9 @@ import xml.etree.ElementTree as ET
 
 # image numpy.arrays are [Row, Column, Channel] 
 
+# To use:
+# 1. use heatmap() to create heatmap
+# 2. 
 
 def avg_overlaps(pred_arr):
 
@@ -32,6 +35,17 @@ def avg_overlaps(pred_arr):
             arr[row, col] = sum(valid) / len(valid)
 
     return np.array(arr)
+
+def bgr2bgra(image):
+    
+    b, g, r = cv2.split(image)
+
+    # The np.ones is the alpha channel being added to the heatmap to convert
+    # from BGR to BGRA.
+    img = cv2.merge((b, g, r, np.ones(b.shape, dtype = heatmap.dtype)))
+
+    return img
+
 
 def blend_images(slide, heatmap, alpha):
 
@@ -151,43 +165,60 @@ if __name__ == '__main__':
     
     TEST_IMG_DIR = '/home/jwwoo/pre-camelyon/slide_images/'
     TEST_IMGS = ['b_1.tif', 'b_9.tif', 'b_10.tif']
-    TEST_XMLS = ['b_1.xml', 'b_9.xml', 'b_10.xml']
-    PATCH_SIZE = 100
+    # TEST_XMLS = ['b_1.xml', 'b_9.xml', 'b_10.xml']
+    PRED_ARR_DIR = ''
+    PRED_ARRS = []
+    PATCH_SIZE = 304
     LEVEL = 5
     OVERLAPS = True
     BINARY = False
-    THRESHOLD = 0.5
+    THRESHOLD = 0.33
     ALPHA = 0.5
-
+    
+    '''
     TEST_ARR = np.array([[0. , 0. , 0.3, 0.2],
                          [0.6, 0. , 0.1, 0. ],
                          [1. , 0.4, 0. , 0. ]])
+    '''
 
-    print('Opening slide...\n')
-    slide = openslide.OpenSlide(TEST_IMG_DIR + TEST_IMGS[0])
+    for ind, slide in enumerate(TEST_IMGS):
+        print('Opening slide...\n')
+        slide = openslide.OpenSlide(TEST_IMG_DIR + slide)
 
-    col, row = slide.level_dimensions[LEVEL]
-    img = np.array(slide.read_region((0,0), LEVEL, (col, row)))
+        col, row = slide.level_dimensions[LEVEL]
+        img = np.array(slide.read_region((0,0), LEVEL, (col, row)))
+        
+        #TODO replace TEST_ARR with the real thing
+        print('Generating heatmap...\n')
+        heatmap = heatmap(TEST_ARR, PATCH_SIZE, LEVEL, OVERLAPS, BINARY, THRESHOLD)
+
+        # fakemap is the toy heatmap data that is equal in size to the WSI at level
+        # LEVEL. It is used to test the image blending step that happens at
+        # blend_images(...).
+        '''
+        fakemap = cv2.merge((np.ones((row, col), dtype = np.uint8) * 255, # blue
+                         np.zeros((row, col), dtype = np.uint8), # green
+                         np.zeros((row, col), dtype = np.uint8), # red
+                         np.ones((row, col), dtype = np.uint8))) # alpha
+        '''
+
+        # print(fakemap.shape, img.shape)
+        # print(type(fakemap), type(img))
+        if not BINARY:
+        
+            print('Adding alpha channel to heatmap...\n')
+            heatmap = bgr2bgra(heatmap)
+
+            #TODO CHECK THIS
+            print('Overlaying slide with heatmap...\n')
+            img = blend_images(img, heatmap, ALPHA)
+
+        # print('Processing XML file for tumor region contours...\n')
+        # contours = parseXML(TEST_IMG_DIR + TEST_XMLS[0], slide.level_downsamples[LEVEL])
     
-    print('Generating heatmap...\n')
-    heatmap = heatmap(TEST_ARR, PATCH_SIZE, LEVEL, OVERLAPS, BINARY, THRESHOLD)
-
-    print('Adding alpha channel to heatmap...\n')
-    b, g, r = cv2.split(heatmap)
-    # The np.ones is the alpha channel being added to the heatmap to convert
-    # from RGB to RGBA.
-    heatmap = cv2.merge((b, g, r, np.ones(b.shape, dtype = heatmap.dtype)))
-    
-    #TODO CHECK THIS
-    print('Overlaying slide with heatmap...\n')
-    img = blend_images(img, heatmap, ALPHA)
-
-    # print('Processing XML file for tumor region contours...\n')
-    # contours = parseXML(TEST_IMG_DIR + TEST_XMLS[0], slide.level_downsamples[LEVEL])
-    
-    # Draws true contours for tumor regions
-    #cv2.drawContours(img, contours, -1, (0,0,0), 3)
+        # Draws true contours for tumor regions
+        #cv2.drawContours(img, contours, -1, (0,0,0), 3)
 
     
-    cv2.imwrite('final_map.jpg', img)
-    print('Done!')
+        cv2.imwrite('final_map.jpg', img)
+        print('Done!')
