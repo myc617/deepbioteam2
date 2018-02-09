@@ -1,1 +1,1 @@
-print("guldam")
+print("ok")
