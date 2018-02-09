@@ -7,7 +7,10 @@ import xml.etree.ElementTree as ET
 
 # To use:
 # 1. use heatmap() to create heatmap
-# 2. 
+# 2. use bgr2bgra() to add on alpha channel for merging with original slide
+# image
+# 3. blend heatmap and WSI using blend_images()
+# 4. create image using cv2.imwrite()
 
 def avg_overlaps(pred_arr):
 
