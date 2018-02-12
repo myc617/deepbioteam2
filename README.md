@@ -1,1 +1,0 @@
-gdirectory from guldam
